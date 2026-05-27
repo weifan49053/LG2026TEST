@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LG 電視科技配對挑戰</title>
+  <style>
+    /* === 基礎全螢幕與深色背景設定 (仿 webOS 介面) === */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #121212; /* 深邃黑背景，凸顯高對比 */
+      color: #FFFFFF;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* === 頂部計分板 === */
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #A50034; /* LG 品牌紅 */
+      text-shadow: 0 0 10px rgba(165, 0, 52, 0.5);
+    }
+    .score-board {
+      font-size: 1.8rem;
+      background: #333;
+      padding: 10px 30px;
+      border-radius: 50px;
+      border: 2px solid #555;
+    }
+
+    /* === 遊戲區域 (3x4 網格) === */
+    .game-board {
+      width: 90vw;
+      max-width: 1200px;
+      height: 70vh;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 20px;
+      perspective: 1000px; /* 3D 翻轉的視角深度 */
+    }
+
+    /* === 卡牌本體設定 === */
+    .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.2s;
+    }
+
+    /* 針對 LG 智慧遙控器優化：游標滑過時的強烈視覺回饋 */
+    .card:hover {
+      transform: scale(1.05); /* 微微放大 */
+    }
+    /* 為了不干擾翻牌的 3D 動畫，Hover 發光做在另一個 class 上 */
+    .card.hover-glow:hover {
+       box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+       border-radius: 15px;
+    }
+
+    .card.flip {
+      transform: rotateY(180deg);
+    }
+
+    /* 配對成功後的狀態 */
+    .card.matched {
+      opacity: 0.5; /* 半透明化 */
+      pointer-events: none; /* 鎖定不可再點擊 */
+    }
+
+    /* 卡牌正反面共用設定 */
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden; /* 隱藏背面 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 15px;
+      font-size: 1.6rem;
+      font-weight: bold;
+      text-align: center;
+      padding: 15px;
+      white-space: pre-line; /* 允許文字換行 (\n) */
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    /* 卡牌背面 (未翻開時顯示的 LG 紅底) */
+    .card-back {
+      background: linear-gradient(135deg, #A50034 0%, #7a0026 100%);
+      color: white;
+      font-size: 2.5rem;
+      border: 2px solid #ff4d79;
+    }
+
+    /* 卡牌正面 (翻開時顯示的規格文字) */
+    .card-front {
+      background-color: #2A2A2A;
+      color: #E0E0E0;
+      transform: rotateY(180deg);
+      border: 2px solid #555;
+    }
+
+    /* 慶祝畫面 */
+    #celebration {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 5rem;
+      color: #4CAF50;
+      text-shadow: 0 0 30px rgba(76, 175, 80, 0.8);
+      font-weight: bold;
+      z-index: 10;
+      background: rgba(0,0,0,0.85);
+      padding: 50px 100px;
+      border-radius: 30px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>LG 電視科技配對挑戰</h1>
+    <div class="score-board">配對成功: <span id="score">0</span> / 6</div>
+  </header>
+
+  <div class="game-board" id="gameBoard">
+    </div>
+
+  <div id="celebration">
+    挑戰成功！<br>
+    <button onclick="location.reload()" style="margin-top: 20px; padding: 15px 40px; font-size: 2rem; background: #A50034; color: white; border: none; border-radius: 10px; cursor: pointer;">再玩一次</button>
+  </div>
+
+  <script>
+    // === 步驟一：定義模式 B (規格與功能) 的卡牌資料 ===
+    const cardData = [
+      { matchId: 'chip', text: 'α11 AI\n影音處理晶片' },
+      { matchId: 'chip', text: '獨立物件優化與\n主體立體感提升' },
+      { matchId: 'mla', text: '微透鏡陣列\n(MLA) OLED' },
+      { matchId: 'mla', text: '亮度全面激增\n抗反射超廣視角' },
+      { matchId: 'os', text: 'webOS Re:New\n換新計劃' },
+      { matchId: 'os', text: '保證 5 年\n系統免費升級' },
+      { matchId: 'remote', text: '智慧遙控器\n(Magic Remote)' },
+      { matchId: 'remote', text: '直覺滑鼠游標與\n中央滾輪操作' },
+      { matchId: 'game', text: '極致電競規格\n(4K 144Hz)' },
+      { matchId: 'game', text: '畫面流暢無撕裂\n高刷不卡頓' },
+      { matchId: 'audio', text: '9.1.2 聲道\n環繞音效模擬' },
+      { matchId: 'audio', text: '打造沉浸式\n劇院級包覆感' }
+    ];
+
+    const gameBoard = document.getElementById('gameBoard');
+    const scoreElement = document.getElementById('score');
+    const celebration = document.getElementById('celebration');
+
+    let hasFlippedCard = false;
+    let lockBoard = false;
+    let firstCard, secondCard;
+    let score = 0;
+
+    // === 步驟二：初始化遊戲，洗牌並生成卡牌 ===
+    function initGame() {
+      // 隨機洗牌陣列 (Fisher-Yates Shuffle)
+      cardData.sort(() => 0.5 - Math.random());
+
+      cardData.forEach(data => {
+        // 建立卡牌容器
+        const cardElement = document.createElement('div');
+        cardElement.classList.add('card', 'hover-glow');
+        cardElement.dataset.matchId = data.matchId; // 綁定配對 ID
+
+        // 卡牌正面 (翻開時的文字)
+        const frontFace = document.createElement('div');
+        frontFace.classList.add('card-front');
+        frontFace.innerText = data.text;
+
+        // 卡牌背面 (LG 標誌或預設圖案)
+        const backFace = document.createElement('div');
+        backFace.classList.add('card-back');
+        backFace.innerText = 'LG';
+
+        // 組裝卡牌
+        cardElement.appendChild(frontFace);
+        cardElement.appendChild(backFace);
+        
+        // 綁定點擊事件
+        cardElement.addEventListener('click', flipCard);
+        
+        gameBoard.appendChild(cardElement);
+      });
+    }
+
+    // === 步驟三：翻牌邏輯 ===
+    function flipCard() {
+      if (lockBoard) return;
+      if (this === firstCard) return; // 避免連點同一張牌
+
+      this.classList.add('flip');
+
+      if (!hasFlippedCard) {
+        // 第一次點擊
+        hasFlippedCard = true;
+        firstCard = this;
+        return;
+      }
+
+      // 第二次點擊
+      secondCard = this;
+      checkForMatch();
+    }
+
+    // === 步驟四：檢查是否配對成功 ===
+    function checkForMatch() {
+      // 關鍵：比對 dataset.matchId
+      let isMatch = firstCard.dataset.matchId === secondCard.dataset.matchId;
+
+      isMatch ? disableCards() : unflipCards();
+    }
+
+    // 配對成功：鎖定卡牌並加分
+    function disableCards() {
+      firstCard.removeEventListener('click', flipCard);
+      secondCard.removeEventListener('click', flipCard);
+      
+      // 移除 hover 發光效果，並加上半透明狀態
+      firstCard.classList.remove('hover-glow');
+      secondCard.classList.remove('hover-glow');
+      
+      setTimeout(() => {
+          firstCard.classList.add('matched');
+          secondCard.classList.add('matched');
+      }, 500); // 延遲一下讓玩家看清楚配對成功的文字
+
+      score++;
+      scoreElement.innerText = score;
+
+      if (score === 6) {
+        setTimeout(() => { celebration.style.display = 'block'; }, 800);
+      }
+
+      resetBoard();
+    }
+
+    // 配對失敗：翻轉回去
+    function unflipCards() {
+      lockBoard = true; // 鎖定盤面，防止動畫期間亂點
+
+      setTimeout(() => {
+        firstCard.classList.remove('flip');
+        secondCard.classList.remove('flip');
+        resetBoard();
+      }, 1200); // 給學員 1.2 秒的記憶時間
+    }
+
+    // 重置狀態變數
+    function resetBoard() {
+      [hasFlippedCard, lockBoard] = [false, false];
+      [firstCard, secondCard] = [null, null];
+    }
+
+    // 啟動遊戲
+    initGame();
+  </script>
+</body>
+</html>
