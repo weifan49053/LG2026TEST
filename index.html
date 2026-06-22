@@ -1,143 +1,272 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LG 2026 TV知識大考驗</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #121212; color: #FFFFFF;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      height: 100vh; overflow: hidden;
-    }
-    header { text-align: center; margin-bottom: 20px; }
-    h1 { font-size: 2.5rem; margin-bottom: 10px; color: #A50034; text-shadow: 0 0 10px rgba(165,0,52,0.5); }
-    .status-container { display: flex; gap: 30px; justify-content: center; }
-    .board { font-size: 1.8rem; background: #222; padding: 10px 30px; border-radius: 50px; border: 2px solid #444; }
-    .warning { border-color: #ff3333; color: #ff3333; animation: blink 1s infinite; }
-    .game-board {
-      width: 90vw; max-width: 1200px; height: 65vh;
-      display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr);
-      gap: 20px; perspective: 1000px;
-    }
-    .card {
-      position: relative; width: 100%; height: 100%; cursor: pointer;
-      transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
-    }
-    .card:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(255,255,255,0.4); border-radius: 15px; }
-    .card.flip { transform: rotateY(180deg); }
-    /* 答對後保持翻開並加金邊 */
-    .card.matched { border: 4px solid #FFD700; opacity: 1; pointer-events: none; }
-    .card-face {
-      position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 15px; font-size: 1.3rem; font-weight: bold; text-align: center;
-      padding: 10px; white-space: pre-line; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    }
-    .card-back { background: linear-gradient(135deg, #A50034 0%, #7a0026 100%); color: white; font-size: 2rem; border: 2px solid #ff4d79; }
-    .card-front { background-color: #2A2A2A; color: #EEE; transform: rotateY(180deg); border: 2px solid #555; }
-    .modal {
-      display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.95); padding: 50px; border-radius: 30px; text-align: center; border: 2px solid #444; z-index: 20;
-    }
-    button { margin-top: 20px; padding: 15px 40px; font-size: 1.5rem; background: #A50034; color: white; border: none; border-radius: 10px; cursor: pointer; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-  </style>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:16px;background-image:radial-gradient(ellipse at 20% 20%,rgba(165,0,52,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(165,0,52,.05) 0%,transparent 60%)}
+header{text-align:center;margin-bottom:12px;width:100%}
+h1{font-size:1.6rem;letter-spacing:2px;color:#fff;text-shadow:0 0 30px rgba(165,0,52,.8)}
+h1 span{color:#A50034}
+.round-label{font-size:.7rem;letter-spacing:2px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:4px}
+.status-bar{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:10px;flex-wrap:wrap}
+.chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:6px 16px;border-radius:999px;font-size:.9rem;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px)}
+.chip-val{font-weight:700;font-size:1.05rem}
+#timerChip.warning{border-color:#ff3333;color:#ff5555;animation:blink .8s infinite}
+#timerChip.warning .chip-val{color:#ff3333}
+#comboBadge{display:none;background:linear-gradient(135deg,#FFD700,#ff9900);color:#000;padding:5px 14px;border-radius:999px;font-weight:900;font-size:.9rem;animation:popIn .3s ease}
+#comboBadge.show{display:block}
+.game-board{width:96vw;max-width:960px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:10px;height:68vh;perspective:1200px}
+.card{position:relative;width:100%;height:100%;cursor:pointer;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.card:not(.flip):not(.matched):hover{transform:translateY(-3px) scale(1.02);filter:drop-shadow(0 0 12px rgba(165,0,52,.5))}
+.card.flip{transform:rotateY(180deg)}
+.card.matched{transform:rotateY(180deg);pointer-events:none}
+.card.matched .card-front{border-color:#FFD700;box-shadow:0 0 18px rgba(255,215,0,.4),inset 0 0 20px rgba(255,215,0,.05)}
+.card.wrong-shake{animation:shake .45s ease}
+.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:.85rem;font-weight:600;text-align:center;padding:8px;white-space:pre-line;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.card-back{background:linear-gradient(145deg,#A50034 0%,#6b0020 100%);color:rgba(255,255,255,.9);font-size:1.4rem;font-weight:900;letter-spacing:1px;border:2px solid rgba(255,80,110,.4)}
+.card-front{background:linear-gradient(145deg,#1e1e1e 0%,#2a2a2a 100%);color:#f0f0f0;transform:rotateY(180deg);border:2px solid rgba(255,255,255,.1);line-height:1.4}
+.particle{position:fixed;pointer-events:none;border-radius:50%;z-index:200}
+.score-popup{position:fixed;font-weight:900;font-size:1.6rem;pointer-events:none;animation:scoreFloat .9s ease-out forwards;text-shadow:0 0 10px currentColor;z-index:201}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;z-index:50}
+.modal-overlay.show{display:flex}
+.modal-box{background:linear-gradient(145deg,#1a1a1a,#111);border:1px solid rgba(255,255,255,.12);padding:40px 50px;border-radius:24px;text-align:center;max-width:460px;width:90%;animation:popIn .4s cubic-bezier(.4,0,.2,1)}
+.modal-box h2{font-size:2rem;margin-bottom:10px}
+.modal-box p{color:#aaa;font-size:1rem;line-height:1.6}
+.stars{font-size:2.4rem;margin:14px 0;letter-spacing:4px}
+.stat-row{display:flex;justify-content:space-between;margin:8px 0;color:#ccc;font-size:.95rem}
+.stat-row span:last-child{color:#fff;font-weight:700}
+.btn-row{display:flex;gap:12px;margin-top:24px;justify-content:center}
+.btn{padding:12px 30px;font-size:1rem;border:none;border-radius:10px;cursor:pointer;font-weight:700;transition:transform .15s,filter .15s}
+.btn:hover{transform:scale(1.04);filter:brightness(1.1)}
+.btn-primary{background:#A50034;color:#fff}
+.btn-secondary{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes popIn{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-120px) scale(.3);opacity:0}}
+@keyframes scoreFloat{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-80px);opacity:0}}
+@keyframes shake{0%,100%{transform:rotateY(180deg) translateX(0)}20%{transform:rotateY(180deg) translateX(-8px)}40%{transform:rotateY(180deg) translateX(8px)}60%{transform:rotateY(180deg) translateX(-6px)}80%{transform:rotateY(180deg) translateX(6px)}}
+@keyframes matchPulse{0%{box-shadow:0 0 0 rgba(255,215,0,.5)}50%{box-shadow:0 0 30px rgba(255,215,0,.6)}100%{box-shadow:0 0 18px rgba(255,215,0,.4)}}
+</style>
 </head>
 <body>
-
-  <header>
-    <h1>LG 2026 TV知識大考驗</h1>
-    <div class="status-container">
-      <div class="board">配對: <span id="score">0</span>/6</div>
-      <div class="board" id="timerBoard">時間: <span id="timer">90</span>s</div>
-    </div>
-  </header>
-
-  <div class="game-board" id="gameBoard"></div>
-
-  <div class="modal" id="modal">
-    <h2 id="modalTitle">挑戰成功！</h2>
-    <p id="modalText"></p>
-    <button onclick="location.reload()">重新挑戰</button>
+<header>
+  <h1><span>LG</span> LG TV 新品功能記憶大挑戰</h1>
+  <p class="round-label" id="roundLabel">第 1 關 · 難度：★☆☆</p>
+  <div class="status-bar">
+    <div class="chip">🏆 <span class="chip-val" id="score">0</span>/8</div>
+    <div class="chip" id="timerChip">⏱ <span class="chip-val" id="timer">3:00</span></div>
+    <div class="chip">🔥 <span class="chip-val" id="totalScore">0</span> pt</div>
+    <div id="comboBadge">⚡ COMBO ×<span id="comboCount">2</span></div>
   </div>
+</header>
+<div class="game-board" id="gameBoard"></div>
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <h2 id="modalTitle"></h2>
+    <div class="stars" id="modalStars"></div>
+    <p id="modalText"></p>
+    <div style="margin-top:20px;border-top:1px solid rgba(255,255,255,.1);padding-top:14px">
+      <div class="stat-row"><span>完成時間</span><span id="statTime">--</span></div>
+      <div class="stat-row"><span>最高連擊</span><span id="statCombo">--</span></div>
+      <div class="stat-row"><span>本關得分</span><span id="statPts">--</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="location.reload()">重新開始</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextRound()">下一關 →</button>
+    </div>
+  </div>
+</div>
+<script>
+const questionPool=[
+  {spec:'Micro RGB evo',feature:'新世代液晶技術\nRGB原色豐富色彩'},
+  {spec:'LG OLED evo',feature:'自體發光像素\n完美純黑生動鮮明'},
+  {spec:'OLED83W6',feature:'9.9mm 壁畫式設計\n極光煥彩顯色技術'},
+  {spec:'Mini LED 精準控光',feature:'提升液晶顯示器明暗對比\n呈現細膩畫面細節'},
+  {spec:'真無線傳輸技術',feature:'擺脫繁雜線材\n所有設備完美整合'},
+  {spec:'低藍光護眼認證',feature:'長時間觀影\n依然不疲勞'},
+  {spec:'α11 AI 影音晶片',feature:'提升清晰度與質感\n銳利自然畫質'},
+  {spec:'AI HDR 畫質重塑',feature:'自動優化色彩亮度\n賦予影像層次與真實感'},
+  {spec:'webOS Re:New 5年升級',feature:'享受最新功能與服務\n並維持高安全性'},
+  {spec:'AI 智慧滑鼠遙控器',feature:'陀螺儀精準定位\n操作直覺便利'},
+  {spec:'雙 AI 智慧搜尋',feature:'支援 Gemini 與 Copilot\n複雜搜尋輕鬆搞定'},
+  {spec:'LG Channels',feature:'無需訂閱\n即可觀看新聞與戲劇'},
+  {spec:'StanbyME 2',feature:'內建電池可拆卸螢幕\n多種觀看方式'},
+  {spec:'31.5 吋 4K 觸控',feature:'斜槓機\n多功能觸控螢幕'},
+  {spec:'極光煥彩顯色技術',feature:'峰值亮度提升 3.9 倍\n前所未見的畫質'},
+  {spec:'純淨黑抗反光技術',feature:'反射降至最低\n維持完美純黑與色彩'}
+];
 
-  <script>
-    const questionPool = [
-      { spec: 'Micro RGB evo', feature: '新世代液晶顯示技術\nRGB原色技術提供豐富色彩' },
-      { spec: 'LG OLED evo', feature: '自體發光像素\n完美純黑，生動且鮮明' },
-      { spec: 'OLED83W6', feature: '9.9mm 壁畫式設計\n搭載極光煥彩顯色技術' },
-      { spec: 'Mini LED 精準控光', feature: '提升對比度\n呈現更細膩的畫面細節' },
-      { spec: '真無線傳輸技術', feature: '擺脫繁雜線材\n所有設備完美整合' },
-      { spec: '低藍光護眼認證', feature: '長時間觀影\n依然不疲勞' },
-      { spec: 'α11 AI 影音晶片', feature: '提升清晰度與質感\n呈現銳利、自然的畫質' },
-      { spec: 'AI HDR 畫質重塑', feature: '自動優化色彩、亮度對比\n賦予影像層次與真實感' },
-      { spec: 'webOS Re:New 5年升級', feature: '享受最新功能與服務\n並維持高安全性' },
-      { spec: 'AI 智慧滑鼠遙控器', feature: '陀螺儀精準定位\n操作直覺便利' },
-      { spec: '雙 AI 智慧搜尋', feature: '支援 Gemini 與 Copilot\n複雜搜尋輕鬆搞定' },
-      { spec: 'LG Channels', feature: '無需訂閱\n即可觀看新聞與戲劇' },
-      { spec: 'StanbyME 2', feature: '內建電池、可拆卸螢幕\n多種觀看方式' },
-      { spec: '31.5 吋 4K 觸控', feature: '斜槓機\n多功能觸控螢幕' },
-      { spec: '極光煥彩顯色技術', feature: '峰值亮度提升 3.9 倍\n前所未見的畫質' },
-      { spec: '純淨黑抗反光技術', feature: '反射降至最低\n維持完美純黑與色彩' }
-    ];
+const ROUND_CONFIG=[
+  {time:180,label:'第 1 關 · 難度：★☆☆'},
+  {time:150,label:'第 2 關 · 難度：★★☆'},
+  {time:120,label:'第 3 關 · 難度：★★★'},
+];
 
-    let score = 0, timeLeft = 90, lock = false, hasFlipped = false, first, second, timer;
+let round=1,score=0,totalScore=0,timeLeft=180;
+let lock=false,hasFlipped=false,first,second,timerInterval;
+let combo=0,maxCombo=0,timerStarted=false;
+let usedQuestions=[];
 
-    function init() {
-      const selected = questionPool.sort(() => 0.5 - Math.random()).slice(0, 6);
-      let cards = [];
-      selected.forEach((q, i) => {
-        cards.push({ id: i, text: q.spec }, { id: i, text: q.feature });
-      });
-      cards.sort(() => 0.5 - Math.random());
-      
-      const board = document.getElementById('gameBoard');
-      cards.forEach(c => {
-        const div = document.createElement('div');
-        div.className = 'card'; div.dataset.id = c.id;
-        div.innerHTML = `<div class="card-face card-front">${c.text}</div><div class="card-face card-back">LG</div>`;
-        div.onclick = flip;
-        board.appendChild(div);
-      });
+function formatTime(s){const m=Math.floor(s/60);const ss=s%60;return m+':'+(ss<10?'0':'')+ss}
+
+function init(){
+  score=0;combo=0;maxCombo=0;hasFlipped=false;lock=false;timerStarted=false;
+  first=second=null;clearInterval(timerInterval);
+  const cfg=ROUND_CONFIG[Math.min(round-1,ROUND_CONFIG.length-1)];
+  timeLeft=cfg.time;
+  document.getElementById('score').innerText='0';
+  document.getElementById('timer').innerText=formatTime(timeLeft);
+  document.getElementById('roundLabel').innerText=cfg.label;
+  document.getElementById('timerChip').classList.remove('warning');
+  document.getElementById('comboBadge').classList.remove('show');
+  document.getElementById('totalScore').innerText=totalScore;
+
+  const available=questionPool.filter((_,i)=>!usedQuestions.includes(i));
+  const pool=available.length>=8?available:questionPool;
+  const idxPool=pool===questionPool
+    ?questionPool.map((_,i)=>i)
+    :questionPool.map((_,i)=>i).filter(i=>!usedQuestions.includes(i));
+  const picked=shuffle(idxPool).slice(0,8);
+  usedQuestions=[...usedQuestions,...picked];
+  if(usedQuestions.length>16)usedQuestions=picked;
+
+  let cards=[];
+  picked.forEach(qi=>{
+    cards.push({id:qi,text:questionPool[qi].spec,type:'spec'});
+    cards.push({id:qi,text:questionPool[qi].feature,type:'feat'});
+  });
+  cards=shuffle(cards);
+
+  const board=document.getElementById('gameBoard');
+  board.innerHTML='';
+  cards.forEach(c=>{
+    const div=document.createElement('div');
+    div.className='card';
+    div.dataset.id=c.id;
+    div.innerHTML=`<div class="card-face card-front">${c.text}</div><div class="card-face card-back">LG</div>`;
+    div.addEventListener('click',flip);
+    board.appendChild(div);
+  });
+}
+
+function flip(){
+  if(lock||this.classList.contains('flip')||this.classList.contains('matched'))return;
+  if(!timerStarted){timerStarted=true;startTimer();}
+  this.classList.add('flip');
+  if(!hasFlipped){hasFlipped=true;first=this;return;}
+  second=this;lock=true;check();
+}
+
+function check(){
+  if(first.dataset.id===second.dataset.id){
+    combo++;if(combo>maxCombo)maxCombo=combo;
+    const pts=100+(combo>1?(combo-1)*50:0);
+    totalScore+=pts;score++;
+    document.getElementById('score').innerText=score;
+    document.getElementById('totalScore').innerText=totalScore;
+    first.classList.add('matched');second.classList.add('matched');
+    first.style.animation='matchPulse .6s ease';second.style.animation='matchPulse .6s ease';
+    if(combo>=2){
+      const badge=document.getElementById('comboBadge');
+      document.getElementById('comboCount').innerText=combo;
+      badge.classList.add('show');
+      setTimeout(()=>badge.classList.remove('show'),1500);
     }
+    spawnParticles(second,combo>=2?'#FFD700':'#A50034');
+    showScorePopup(second,`+${pts}`,combo>=2?'#FFD700':'#7fff7f');
+    reset();
+    if(score===8)setTimeout(win,400);
+  }else{
+    combo=0;document.getElementById('comboBadge').classList.remove('show');
+    first.classList.add('wrong-shake');second.classList.add('wrong-shake');
+    setTimeout(()=>{
+      first.classList.remove('flip','wrong-shake');
+      second.classList.remove('flip','wrong-shake');
+      reset();
+    },900);
+  }
+}
 
-    function flip() {
-      if (lock || this.classList.contains('flip')) return;
-      if (!timer && score === 0) startTimer();
-      this.classList.add('flip');
-      if (!hasFlipped) { hasFlipped = true; first = this; return; }
-      second = this;
-      check();
-    }
+function startTimer(){
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('timer').innerText=formatTime(timeLeft);
+    if(timeLeft<=30)document.getElementById('timerChip').classList.add('warning');
+    if(timeLeft<=0){clearInterval(timerInterval);lose();}
+  },1000);
+}
 
-    function check() {
-      lock = true;
-      if (first.dataset.id === second.dataset.id) {
-        score++; document.getElementById('score').innerText = score;
-        first.classList.add('matched'); second.classList.add('matched');
-        reset(); 
-        if (score === 6) win();
-      } else {
-        setTimeout(() => { first.classList.remove('flip'); second.classList.remove('flip'); reset(); }, 2500);
-      }
-    }
+function getStars(time,cfg){
+  const elapsed=cfg.time-time;
+  if(elapsed<=cfg.time*.45)return 3;
+  if(elapsed<=cfg.time*.75)return 2;
+  return 1;
+}
 
-    function startTimer() {
-      timer = setInterval(() => {
-        timeLeft--; document.getElementById('timer').innerText = timeLeft;
-        if (timeLeft <= 15) document.getElementById('timerBoard').classList.add('warning');
-        if (timeLeft <= 0) { clearInterval(timer); showModal('時間到！', '很可惜，時間用完了。'); }
-      }, 1000);
-    }
+function win(){
+  clearInterval(timerInterval);
+  const cfg=ROUND_CONFIG[Math.min(round-1,ROUND_CONFIG.length-1)];
+  const elapsed=cfg.time-timeLeft;
+  const stars=getStars(timeLeft,cfg);
+  const starStr='★'.repeat(stars)+'☆'.repeat(3-stars);
+  const hasNext=round<ROUND_CONFIG.length;
+  document.getElementById('modalTitle').innerText='🎉 挑戰成功！';
+  document.getElementById('modalStars').innerText=starStr;
+  document.getElementById('modalText').innerText=stars===3?'完美！你是 LG 電視達人！':stars===2?'很棒！再快一點就能拿滿星！':'完成了！繼續練習更上一層樓！';
+  document.getElementById('statTime').innerText=`${elapsed} 秒`;
+  document.getElementById('statCombo').innerText=`×${maxCombo}`;
+  document.getElementById('statPts').innerText=`${totalScore} pt`;
+  document.getElementById('nextBtn').style.display=hasNext?'block':'none';
+  document.getElementById('modal').classList.add('show');
+}
 
-    function reset() { [hasFlipped, lock, first, second] = [false, false, null, null]; }
-    function win() { clearInterval(timer); showModal('挑戰成功！', `太強了！僅用 ${90-timeLeft} 秒完成。`); }
-    function showModal(t, txt) { document.getElementById('modalTitle').innerText = t; document.getElementById('modalText').innerText = txt; document.getElementById('modal').style.display = 'block'; }
-    
-    init();
-  </script>
+function lose(){
+  document.getElementById('modalTitle').innerText='⏰ 時間到！';
+  document.getElementById('modalStars').innerText='☆☆☆';
+  document.getElementById('modalText').innerText=`答對了 ${score}/8 對，再試一次！`;
+  document.getElementById('statTime').innerText='超時';
+  document.getElementById('statCombo').innerText=`×${maxCombo}`;
+  document.getElementById('statPts').innerText=`${totalScore} pt`;
+  document.getElementById('nextBtn').style.display='none';
+  document.getElementById('modal').classList.add('show');
+}
+
+function nextRound(){round++;document.getElementById('modal').classList.remove('show');init();}
+function reset(){hasFlipped=false;lock=false;first=second=null;}
+function shuffle(arr){return[...arr].sort(()=>Math.random()-.5)}
+
+function spawnParticles(el,color){
+  const rect=el.getBoundingClientRect();
+  const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  const colors=color==='#FFD700'?['#FFD700','#FFA500','#fff','#ffe066']:['#A50034','#ff4d79','#fff','#ff9966'];
+  for(let i=0;i<14;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const size=6+Math.random()*8;
+    const angle=(Math.PI*2*i)/14+Math.random()*.5;
+    const dist=40+Math.random()*60;
+    p.style.cssText=`left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${colors[i%colors.length]};transform:translate(-50%,-50%);position:fixed;pointer-events:none;border-radius:50%;`;
+    p.animate([
+      {transform:'translate(-50%,-50%) scale(1)',opacity:1},
+      {transform:`translate(calc(-50% + ${Math.cos(angle)*dist}px),calc(-50% + ${Math.sin(angle)*dist-60}px)) scale(.2)`,opacity:0}
+    ],{duration:700+Math.random()*300,easing:'ease-out',fill:'forwards'});
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),1100);
+  }
+}
+
+function showScorePopup(el,text,color){
+  const rect=el.getBoundingClientRect();
+  const p=document.createElement('div');
+  p.className='score-popup';
+  p.innerText=text;
+  p.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top}px;color:${color};transform:translateX(-50%);position:fixed;`;
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),950);
+}
+
+init();
+</script>
 </body>
 </html>
