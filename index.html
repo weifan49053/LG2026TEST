@@ -55,7 +55,7 @@ h1 span{color:#A50034}
   <p class="round-label" id="roundLabel">第 1 關 · 難度：★☆☆</p>
   <div class="status-bar">
     <div class="chip">🏆 <span class="chip-val" id="score">0</span>/8</div>
-    <div class="chip" id="timerChip">⏱ <span class="chip-val" id="timer">3:00</span></div>
+    <div class="chip" id="Chip">⏱ <span class="chip-val" id="timer">5:00</span></div>
     <div class="chip">🔥 <span class="chip-val" id="totalScore">0</span> pt</div>
     <div id="comboBadge">⚡ COMBO ×<span id="comboCount">2</span></div>
   </div>
@@ -98,9 +98,9 @@ const questionPool=[
 ];
 
 const ROUND_CONFIG=[
-  {time:180,label:'第 1 關 · 難度：★☆☆'},
-  {time:150,label:'第 2 關 · 難度：★★☆'},
-  {time:120,label:'第 3 關 · 難度：★★★'},
+  {time:300,label:'第 1 關 · 難度：★☆☆'},
+  {time:300,label:'第 2 關 · 難度：★★☆'},
+  {time:300,label:'第 3 關 · 難度：★★★'},
 ];
 
 let round=1,score=0,totalScore=0,timeLeft=180;
